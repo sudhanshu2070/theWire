@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "target": "ES2020",          
+      "module": "commonjs",        
+      "outDir": "./dist",          
+      "rootDir": "./src",          
+      "strict": true,             
+      "esModuleInterop": true,     
+      "skipLibCheck": true,        
+      "forceConsistentCasingInFileNames": true ,
+      "moduleResolution": "node", // Resolve modules similar to Node.js
+      "resolveJsonModule": true, // Allow importing JSON files
+      "typeRoots": ["./types", "./node_modules/@types"],
+      "types": ["node"]
+    },
+    "include": ["src/**/*", "src/types/**/*.d.ts"],// Include all .ts files in the src folder   
+    "exclude": ["node_modules", "**/*.spec.ts"] 
+  }
+  
