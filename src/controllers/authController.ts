@@ -85,7 +85,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     
     if (!isMatch) {
       console.log('Invalid credentials - password mismatch'); 
-      return res.status(400).json({ msg: 'Invalid credentials 121' });
+      return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
     // Create JWT payload and sign the token
