@@ -31,3 +31,4 @@ node_modules/
 # Ignore dist directory (for compiled/transpiled files)
 dist/
 /dist
+.vercel
