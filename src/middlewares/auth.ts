@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verify, JwtPayload } from 'jsonwebtoken';
 import jwtSecret from '../config/jwt';
+import CustomError from '../utils/customError'; 
 
 // Define the structure of your JWT payload
 interface CustomJwtPayload extends JwtPayload {
@@ -11,23 +12,25 @@ interface CustomJwtPayload extends JwtPayload {
 
 // Middleware function
 const auth = (req: Request, res: Response, next: NextFunction) => {
-  // Get the token from the header
-  console.log("headers", req.headers);
+
+  // Retrieving the token from the request - header
   const token = req.header('x-auth-token');
-  console.log("token:", token);
   
   if (!token) {
-    return res.status(401).json({ msg: 'No token, authorization denied' });
+    //return res.status(401).json({ msg: 'No token, authorization denied' });
+    throw new CustomError('Authorization denied. No token provided.', 401);
   }
 
   try {
-    // Verify the token
+    // Verifying the token
     const decoded = verify(token, jwtSecret) as CustomJwtPayload;
-    // Attach the user to the request
+
+    // Attaching the decoded user information to the request object
     req.body.user = decoded.user;
-    next(); // Continue to the next middleware or route handler
+
+    next(); // Continuing to the next middleware or route handler
   } catch (err) {
-    res.status(401).json({ msg: 'Token is not valid' });
+      throw new CustomError('Invalid or expired token.', 401);
   }
 };
 

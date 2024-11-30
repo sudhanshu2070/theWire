@@ -5,12 +5,12 @@ import { sign } from 'jsonwebtoken';
 import createAuthContactModel from '../models/AuthContact';
 import jwtSecret from '../config/jwt';
 import connectDb from '../config/db';
+import CustomError from '../utils/customError';  // Create a custom error handling utility
 
 dotenv.config();
 
 // Create connection instance
 const authDbURI = process.env.AUTH_DB_URI as string;
-
 const authContactDbConnection = connectDb(authDbURI);
 
 // Create AuthContact model
@@ -19,25 +19,36 @@ const AuthContact = async () => {
   return createAuthContactModel(conn);
 };
 
+// Error handling helper {Custom made}
+const handleError = (error: Error, res: Response) => {
+  const err = error as CustomError;
+  console.error('Error:', err.message);
+  if (err.status) {
+    return res.status(err.status).json({ msg: err.message });
+  }
+  return res.status(500).send('Server error, sent from above and beyond');
+};
+
 // Signup controller
 export const signup = async (req: Request, res: Response): Promise<Response> => {
   
   const { username, email, password, name, number } = req.body;
 
   try {
+
     // Check if user already exists
-
     const AuthContactModel = await AuthContact();
-    console.log("AuthContactModel:", AuthContactModel);
-
     let user = await AuthContactModel.findOne({ email });
-    if (user) return res.status(400).json({ msg: 'User already exists' });
 
-    // Hash the password
+    if (user) {
+      throw new CustomError('User already exists', 400);
+    }
+    
+    // Hashing the password
     const salt = await genSalt(10);
     const hashedPassword = await hash(password, salt);
 
-    // Create new user instance
+    // Creating new user instance
     user = new AuthContactModel({
       username,
       email,
@@ -46,63 +57,48 @@ export const signup = async (req: Request, res: Response): Promise<Response> => 
       number,
     });
 
-    // Save the user to the database
+    // Saving the user to the database
     await user.save();
     return res.status(201).json({ msg: 'User registered successfully' });
-  } catch (error) {
+
+  } 
+  catch (error) {
     const err = error as Error; // Explicitly casting the error to Error
-    console.error(err.message);
-    return res.status(500).send('Server error');
+    return handleError(err, res);
   }
 };
+
 
 // Login controller
 export const login = async (req: Request, res: Response): Promise<Response> => {
   const { username, password } = req.body;
 
   try {
-    console.log("u name:"+ username); 
-    console.log("u pass:" + password);
-    // Check if user exists
-    
+
+    // Check if the user exists or not
     const AuthContactModel = await AuthContact();
-
-    console.log("AuthContactModel:", AuthContactModel);
-
     const user = await AuthContactModel.findOne({ username });
-    console.log("user:", user);
     
     if (!user) {
-      console.log('Invalid credentials - user not found'); 
-      return res.status(400).json({ msg: "User doesn't exist" });
+      throw new CustomError("User doesn't exist", 400); // Custom error
     }
-    // Compare the password
-    const isMatch = await compare(password, user.password);
-    console.log("password:", password);
 
-    console.log("user password:", user.password);
-    console.log("isMatch:", isMatch);
+    // Comparing the password
+    const isMatch = await compare(password, user.password);
     
     if (!isMatch) {
-      console.log('Invalid credentials - password mismatch'); 
-      return res.status(400).json({ msg: 'Invalid credentials' });
+      throw new CustomError('Invalid credentials', 400); // Custom error
     }
 
-    // Create JWT payload and sign the token
+    // Creating JWT payload and sign the token
     const payload = { user: { id: user.id } };
     const token = sign(payload, jwtSecret, { expiresIn: '1h' });
 
-    // Send the token as a response
-
-    const response = { message: 'Login successful', token123: token };
-
-    console.log('Response:', response); // Debugging
-
-    return res.json(response);
-
-  } catch (error) {
+    // Sending the token as a response
+    return res.json({ message: 'Login successful', token });
+  } 
+  catch (error) {
     const err = error as Error; // Explicitly casting the error to Error
-    console.error(err.message);
-    return res.status(500).send('Server error');
+    return handleError(err, res);
   }
 };
